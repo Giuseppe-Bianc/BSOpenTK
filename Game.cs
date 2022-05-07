@@ -7,11 +7,20 @@ using System;
 
 namespace BSOpenTK {
 	public class Game : GameWindow {
-
 		private int vertexBufferHandle, shaderProgramHandle, vertexArryHandle;
-		public Game() : base(GameWindowSettings.Default,
-				NativeWindowSettings.Default) {
-			this.CenterWindow(new Vector2i(960, 576));
+		public Game(int whidt = 960, int heigth = 576, String title = "Game 1") :
+			base(GameWindowSettings.Default,
+			new NativeWindowSettings() {
+				Title = title,
+				Size = new Vector2i(whidt, heigth),
+				WindowBorder = WindowBorder.Fixed,
+				StartVisible = false,
+				StartFocused = true,
+				API = ContextAPI.OpenGL,
+				Profile = ContextProfile.Core,
+				APIVersion = new Version(3, 3)
+			}) {
+			this.CenterWindow();
 		}
 
 		/*protected override void OnUpdateFrame(FrameEventArgs args) {
@@ -26,12 +35,13 @@ namespace BSOpenTK {
 		}
 
 		protected override void OnLoad() {
+			this.IsVisible = true;
 			GL.ClearColor(new Color4(ColorInt(10), ColorInt(20), ColorInt(30), ColorInt(255)));
 
 			float[] vertices = new float[] {
-				 0.0f,  0.5f, 0.0f,
-				 0.5f, -0.5f, 0.0f,
-				-0.5f, -0.5f, 0.0f
+				  0f,   .5f, 0f, 1f, 0f, 0f, 1f,
+				 .5f, -.5f, 0f, 0f, 1f, 0f, 1f,
+				-.5f, -.5f, 0f, 0f, 0f, 1f, 1f
 			};
 
 			this.vertexBufferHandle = GL.GenBuffer();
@@ -41,33 +51,16 @@ namespace BSOpenTK {
 
 			this.vertexArryHandle = GL.GenVertexArray();
 			GL.BindVertexArray(this.vertexArryHandle);
-			GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferHandle);
-			GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
-			GL.EnableVertexAttribArray(0);
 
+			GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferHandle);
+			GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 7 * sizeof(float), 0);
+			GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 7 * sizeof(float), 3 * sizeof(float));
+			GL.EnableVertexAttribArray(0);
+			GL.EnableVertexAttribArray(1);
 			GL.BindVertexArray(0);
 
-			string vertexShaderSources =
-				@"
-				#version 330 core
-				
-				layout (location = 0) in vec3 aPosition;
-
-				//in vec4 aColor;
-
-				void main(){
-					gl_Position = vec4(aPosition,1f);
-				}";
-
-			string pixelShaderSources =
-				@"
-				#version 330 core
-				
-				out vec4 pixelColor;
-
-				void main(){
-					pixelColor = vec4(0.8f, 0.8f, 0.1f, 1f);
-				}";
+			string vertexShaderSources = System.IO.File.ReadAllText(Consts.PATH1);
+			string pixelShaderSources = System.IO.File.ReadAllText(Consts.PATH2);
 
 			int vertexShaderHandle = GL.CreateShader(ShaderType.VertexShader);
 			GL.ShaderSource(vertexShaderHandle, vertexShaderSources);
@@ -94,6 +87,9 @@ namespace BSOpenTK {
 		}
 
 		protected override void OnUnload() {
+			GL.BindVertexArray(0);
+			GL.DeleteVertexArray(this.vertexArryHandle);
+
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 			GL.DeleteBuffer(this.vertexBufferHandle);
 
