@@ -7,7 +7,7 @@ using System;
 
 namespace BSOpenTK {
 	public class Game : GameWindow {
-		private int vertexBufferHandle, shaderProgramHandle, vertexArryHandle;
+		private int vertexBufferHandle, indexBufferHandle, shaderProgramHandle, vertexArryHandle;
 		public Game(int whidt = 960, int heigth = 576, String title = "Game 1") :
 			base(GameWindowSettings.Default,
 			new NativeWindowSettings() {
@@ -39,15 +39,26 @@ namespace BSOpenTK {
 			GL.ClearColor(new Color4(ColorInt(10), ColorInt(20), ColorInt(30), ColorInt(255)));
 
 			float[] vertices = new float[] {
-				  0f,   .5f, 0f, 1f, 0f, 0f, 1f,
-				 .5f, -.5f, 0f, 0f, 1f, 0f, 1f,
-				-.5f, -.5f, 0f, 0f, 0f, 1f, 1f
+				-.5f,  .5f, 0f, 1f, 0f, 0f, 1f,
+				 .5f,  .5f, 0f, 0f, 1f, 0f, 1f,
+				 .5f, -.5f, 0f, 0f, 0f, 1f, 1f,
+				-.5f, -.5f, 0f, 1f, 1f, 0f, 1f
+			};
+
+			int[] indices = new int[] { 
+				0,1,2,
+				0,2,3
 			};
 
 			this.vertexBufferHandle = GL.GenBuffer();
 			GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
 			GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+
+			this.indexBufferHandle = GL.GenBuffer();
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
+			GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsageHint.StaticDraw);
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
 
 			this.vertexArryHandle = GL.GenVertexArray();
 			GL.BindVertexArray(this.vertexArryHandle);
@@ -90,6 +101,9 @@ namespace BSOpenTK {
 			GL.BindVertexArray(0);
 			GL.DeleteVertexArray(this.vertexArryHandle);
 
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+			GL.DeleteBuffer(this.indexBufferHandle);
+
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 			GL.DeleteBuffer(this.vertexBufferHandle);
 
@@ -104,7 +118,8 @@ namespace BSOpenTK {
 
 			GL.UseProgram(this.shaderProgramHandle);
 			GL.BindVertexArray(this.vertexArryHandle);
-			GL.DrawArrays(PrimitiveType.Triangles, 0, 3);
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
+			GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt,0);
 
 			this.Context.SwapBuffers();
 			base.OnRenderFrame(args);
