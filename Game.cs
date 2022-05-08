@@ -8,7 +8,11 @@ using System;
 namespace BSOpenTK {
 	public class Game : GameWindow {
 		private int vertexBufferHandle, indexBufferHandle, shaderProgramHandle, vertexArryHandle;
-		public Game(int whidt = 960, int heigth = 576, String title = "Game 1") :
+
+		public int WW { get; set; }
+		public int HH { get; set; }
+
+		public Game(int whidt = 1111, int heigth = 625, String title = "Game 1") :
 			base(GameWindowSettings.Default,
 			new NativeWindowSettings() {
 				Title = title,
@@ -21,6 +25,8 @@ namespace BSOpenTK {
 				APIVersion = new Version(3, 3)
 			}) {
 			this.CenterWindow();
+			WW = whidt;
+			HH = heigth;
 		}
 
 		/*protected override void OnUpdateFrame(FrameEventArgs args) {
@@ -37,12 +43,20 @@ namespace BSOpenTK {
 		protected override void OnLoad() {
 			this.IsVisible = true;
 			GL.ClearColor(new Color4(ColorInt(10), ColorInt(20), ColorInt(30), ColorInt(255)));
+			float x = 240, y = 228, w = 512, h = 256;
 
-			float[] vertices = new float[] {
-				-.5f,  .5f, 0f, 1f, 0f, 0f, 1f,
-				 .5f,  .5f, 0f, 0f, 1f, 0f, 1f,
-				 .5f, -.5f, 0f, 0f, 0f, 1f, 1f,
-				-.5f, -.5f, 0f, 1f, 1f, 0f, 1f
+			//float[] vertices = new float[] {
+			//	    x, y + h, 1f, 0f, 0f, 1f,
+			//	x + w, y + h, 0f, 1f, 0f, 1f,
+			//	x + w,     y, 0f, 0f, 1f, 1f,
+			//	    x,     y, 1f, 1f, 0f, 1f
+			//};
+
+			VertexPosColor[] vertices = new VertexPosColor[] {
+				new VertexPosColor(new Vector2(x, y + h), new Color4(1f, 0f, 0f, 1f)),
+				new VertexPosColor(new Vector2(x + w, y + h), new Color4(0f, 1f, 0f, 1f)),
+				new VertexPosColor(new Vector2(x + w,y), new Color4(0f, 0f, 1f, 1f)),
+				new VertexPosColor(new Vector2(x,y), new Color4(1f, 1f, 0f, 1f)),
 			};
 
 			int[] indices = new int[] { 
@@ -50,9 +64,11 @@ namespace BSOpenTK {
 				0,2,3
 			};
 
+			int vertBytes = VertexPosColor.VertexInfo.SzInBytes;
+
 			this.vertexBufferHandle = GL.GenBuffer();
 			GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-			GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+			GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * vertBytes, vertices, BufferUsageHint.StaticDraw);
 			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
 			this.indexBufferHandle = GL.GenBuffer();
@@ -64,10 +80,15 @@ namespace BSOpenTK {
 			GL.BindVertexArray(this.vertexArryHandle);
 
 			GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferHandle);
-			GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 7 * sizeof(float), 0);
-			GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 7 * sizeof(float), 3 * sizeof(float));
-			GL.EnableVertexAttribArray(0);
-			GL.EnableVertexAttribArray(1);
+
+			VertexAtrib attr0 = VertexPosColor.VertexInfo.VertexAtribs[0];
+			VertexAtrib attr1 = VertexPosColor.VertexInfo.VertexAtribs[1];
+
+			GL.VertexAttribPointer(attr0.Ind, attr0.CompCount, VertexAttribPointerType.Float, false, vertBytes, attr0.Offset);
+			GL.VertexAttribPointer(attr1.Ind, attr1.CompCount, VertexAttribPointerType.Float, false, vertBytes, attr1.Offset);
+
+			GL.EnableVertexAttribArray(attr0.Ind);
+			GL.EnableVertexAttribArray(attr1.Ind);
 			GL.BindVertexArray(0);
 
 			string vertexShaderSources = System.IO.File.ReadAllText(Consts.PATH1);
@@ -77,9 +98,19 @@ namespace BSOpenTK {
 			GL.ShaderSource(vertexShaderHandle, vertexShaderSources);
 			GL.CompileShader(vertexShaderHandle);
 
+			String vertexShaderInfo = GL.GetShaderInfoLog(vertexShaderHandle);
+			if(vertexShaderInfo != String.Empty) {
+				Console.WriteLine(vertexShaderInfo);
+			}
+
 			int pixelShaderHandle = GL.CreateShader(ShaderType.FragmentShader);
 			GL.ShaderSource(pixelShaderHandle, pixelShaderSources);
 			GL.CompileShader(pixelShaderHandle);
+
+			String pixelShaderInfo = GL.GetShaderInfoLog(pixelShaderHandle);
+			if (pixelShaderInfo != String.Empty) {
+				Console.WriteLine(pixelShaderInfo);
+			}
 
 			this.shaderProgramHandle = GL.CreateProgram();
 
@@ -93,6 +124,15 @@ namespace BSOpenTK {
 
 			GL.DeleteShader(vertexShaderHandle);
 			GL.DeleteShader(pixelShaderHandle);
+
+			int[] viewport = new int[4];
+			GL.GetInteger(GetPName.Viewport, viewport);
+			Vector2 viewportv = new((float)viewport[2], (float)viewport[3]);
+
+			GL.UseProgram(this.shaderProgramHandle);
+			int viewportSizeUnifornLocation = GL.GetUniformLocation(this.shaderProgramHandle, "ViewportSize");
+			GL.Uniform2(viewportSizeUnifornLocation, viewportv);
+			GL.UseProgram(0);
 
 			base.OnLoad();
 		}
