@@ -2,46 +2,80 @@
 using OpenTK.Mathematics;
 
 namespace BSOpenTK {
+	public readonly struct VertexAttribute {
+		public readonly string Name;
+		public readonly int Index, ComponentCount, Offset;
 
-	public readonly struct VertexAtrib {
-		public readonly String Name;
-		public readonly int Ind, CompCount, Offset;
-
-		public VertexAtrib(String Name, int Index, int CompCount, int Offset){
-			this.Name = Name;
-			this.Ind = Index;
-			this.CompCount = CompCount;
-			this.Offset = Offset;
+		/// <summary> Initializes a new instance of the <see cref="VertexAttribute"/> class. </summary>
+		/// <param name="name">The name.</param>
+		/// <param name="index">The index.</param>
+		/// <param name="componentCount">The component count.</param>
+		/// <param name="offset">The offset.</param>
+		public VertexAttribute(string name, int index, int componentCount, int offset) {
+			this.Name = name;
+			this.Index = index;
+			this.ComponentCount = componentCount;
+			this.Offset = offset;
 		}
 	}
 
-	public sealed class VertexInf {
+	/// <summary> The vertex info. </summary>
+	public sealed class VertexInfo {
 		public readonly Type Type;
-		public readonly int SzInBytes;
-		public readonly VertexAtrib[] VertexAtribs;
+		public readonly int SizeInBytes;
+		public readonly VertexAttribute[] VertexAttributes;
 
-		public VertexInf(Type Type, params VertexAtrib[] atributes) {
-			this.Type = Type;
-			this.VertexAtribs = atributes;
+		/// <summary>Initializes a new instance of the <see cref="VertexInfo"/> class.</summary>
+		/// <param name="type">The type.</param>
+		/// <param name="attributes">The attributes.</param>
+		public VertexInfo(Type type, params VertexAttribute[] attributes) {
+			this.Type = type;
+			this.SizeInBytes = 0;
 
-			for (int i = 0; i < this.VertexAtribs.Length; i++) {
-				VertexAtrib atribute = this.VertexAtribs[i];
-				this.SzInBytes += atribute.CompCount * sizeof(float);
+			this.VertexAttributes = attributes;
+
+			for (int i = 0; i < this.VertexAttributes.Length; i++) {
+				VertexAttribute attribute = this.VertexAttributes[i];
+				this.SizeInBytes += attribute.ComponentCount * sizeof(float);
 			}
 		}
 	}
-	public readonly struct VertexPosColor {
+
+
+	public readonly struct VertexPositionColor {
 		public readonly Vector2 Position;
 		public readonly Color4 Color;
 
-		public static readonly VertexInf VertexInfo = new(typeof(VertexPosColor),
-			new VertexAtrib("Position", 0, Consts.PSZ, 0),
-			new VertexAtrib("Color", 1, 4, Consts.PSZ * sizeof(float))
+		public static readonly VertexInfo VertexInfo = new(
+			typeof(VertexPositionColor),
+			new VertexAttribute("Position", 0, 2, 0),
+			new VertexAttribute("Color", 1, 4, 2 * sizeof(float))
 			);
 
-		public VertexPosColor(Vector2 position, Color4 color) {
-			Position = position;
-			Color = color;
+		/// <summary> Initializes a new instance of the <see cref="VertexPositionColor"/> class. </summary>
+		/// <param name="position">The position.</param>
+		/// <param name="color">The color.</param>
+		public VertexPositionColor(Vector2 position, Color4 color) {
+			this.Position = position;
+			this.Color = color;
+		}
+	}
+
+	public readonly struct VertexPositionTexture {
+		public readonly Vector2 Position, TexCoord;
+
+		public static readonly VertexInfo VertexInfo = new(
+			typeof(VertexPositionTexture),
+			new VertexAttribute("Positon", 0, 2, 0),
+			new VertexAttribute("TexCoord", 1, 2, 2 * sizeof(float))
+			);
+
+		/// <summary> Initializes a new instance of the <see cref="VertexPositionTexture"/> class. </summary>
+		/// <param name="position">The position.</param>
+		/// <param name="texCoord">The tex coord.</param>
+		public VertexPositionTexture(Vector2 position, Vector2 texCoord) {
+			this.Position = position;
+			this.TexCoord = texCoord;
 		}
 	}
 }

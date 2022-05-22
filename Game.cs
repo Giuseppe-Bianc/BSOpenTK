@@ -1,22 +1,25 @@
-﻿using OpenTK;
-using OpenTK.Graphics.OpenGL;
-using OpenTK.Mathematics;
+﻿using System;
+using OpenTK;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using System;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 
 namespace BSOpenTK {
 	public class Game : GameWindow {
-		private int vertexBufferHandle, indexBufferHandle, shaderProgramHandle, vertexArryHandle;
+		private VertexBuffer vertexBuffer;
+		private IndexBuffer indexBuffer;
+		private VertexArray vertexArray;
+		private int shaderProgramHandle, vertexCount, indexCount;
 
 		public int WW { get; set; }
 		public int HH { get; set; }
 
-		public Game(int whidt = 1111, int heigth = 625, String title = "Game 1") :
+		public Game(int width = 1111, int height = 625, string title = "Game 1") :
 			base(GameWindowSettings.Default,
 			new NativeWindowSettings() {
 				Title = title,
-				Size = new Vector2i(whidt, heigth),
+				Size = new Vector2i(width, height),
 				WindowBorder = WindowBorder.Fixed,
 				StartVisible = false,
 				StartFocused = true,
@@ -25,8 +28,8 @@ namespace BSOpenTK {
 				APIVersion = new Version(3, 3)
 			}) {
 			this.CenterWindow();
-			WW = whidt;
-			HH = heigth;
+			WW = width;
+			HH = height;
 		}
 
 		/*protected override void OnUpdateFrame(FrameEventArgs args) {
@@ -43,73 +46,82 @@ namespace BSOpenTK {
 		protected override void OnLoad() {
 			this.IsVisible = true;
 			GL.ClearColor(new Color4(ColorInt(10), ColorInt(20), ColorInt(30), ColorInt(255)));
-			float x = 240, y = 228, w = 512, h = 256;
 
-			//float[] vertices = new float[] {
-			//	    x, y + h, 1f, 0f, 0f, 1f,
-			//	x + w, y + h, 0f, 1f, 0f, 1f,
-			//	x + w,     y, 0f, 0f, 1f, 1f,
-			//	    x,     y, 1f, 1f, 0f, 1f
-			//};
+			Random rand = new();
 
-			VertexPosColor[] vertices = new VertexPosColor[] {
-				new VertexPosColor(new Vector2(x, y + h), new Color4(1f, 0f, 0f, 1f)),
-				new VertexPosColor(new Vector2(x + w, y + h), new Color4(0f, 1f, 0f, 1f)),
-				new VertexPosColor(new Vector2(x + w,y), new Color4(0f, 0f, 1f, 1f)),
-				new VertexPosColor(new Vector2(x,y), new Color4(1f, 1f, 0f, 1f)),
-			};
+			int windowWidth = this.ClientSize.X;
+			int windowHeight = this.ClientSize.Y;
 
-			int[] indices = new int[] { 
-				0,1,2,
-				0,2,3
-			};
+			int boxCount = 1_00;
 
-			int vertBytes = VertexPosColor.VertexInfo.SzInBytes;
+			VertexPositionColor[] vertices = new VertexPositionColor[boxCount * 4];
+			this.vertexCount = 0;
 
-			this.vertexBufferHandle = GL.GenBuffer();
-			GL.BindBuffer(BufferTarget.ArrayBuffer, this.vertexBufferHandle);
-			GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * vertBytes, vertices, BufferUsageHint.StaticDraw);
-			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+			for (int i = 0; i < boxCount; i++) {
+				int w = rand.Next(32, 128);
+				int h = rand.Next(32, 128);
+				int x = rand.Next(0, windowWidth - w);
+				int y = rand.Next(0, windowHeight - h);
 
-			this.indexBufferHandle = GL.GenBuffer();
-			GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
-			GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsageHint.StaticDraw);
-			GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+				float r = (float)rand.NextDouble();
+				float g = (float)rand.NextDouble();
+				float b = (float)rand.NextDouble();
 
-			this.vertexArryHandle = GL.GenVertexArray();
-			GL.BindVertexArray(this.vertexArryHandle);
+				vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y + h), new Color4(r, g, b, 1f));
+				vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y + h), new Color4(r, g, b, 1f));
+				vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x + w, y), new Color4(r, g, b, 1f));
+				vertices[this.vertexCount++] = new VertexPositionColor(new Vector2(x, y), new Color4(r, g, b, 1f));
+			}
 
-			GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferHandle);
 
-			VertexAtrib attr0 = VertexPosColor.VertexInfo.VertexAtribs[0];
-			VertexAtrib attr1 = VertexPosColor.VertexInfo.VertexAtribs[1];
+			int[] indices = new int[boxCount * 6];
+			this.indexCount = 0;
+			this.vertexCount = 0;
 
-			GL.VertexAttribPointer(attr0.Ind, attr0.CompCount, VertexAttribPointerType.Float, false, vertBytes, attr0.Offset);
-			GL.VertexAttribPointer(attr1.Ind, attr1.CompCount, VertexAttribPointerType.Float, false, vertBytes, attr1.Offset);
+			for (int i = 0; i < boxCount; i++) {
+				indices[this.indexCount++] = 0 + this.vertexCount;
+				indices[this.indexCount++] = 1 + this.vertexCount;
+				indices[this.indexCount++] = 2 + this.vertexCount;
+				indices[this.indexCount++] = 0 + this.vertexCount;
+				indices[this.indexCount++] = 2 + this.vertexCount;
+				indices[this.indexCount++] = 3 + this.vertexCount;
 
-			GL.EnableVertexAttribArray(attr0.Ind);
-			GL.EnableVertexAttribArray(attr1.Ind);
-			GL.BindVertexArray(0);
+				this.vertexCount += 4;
+			}
 
-			string vertexShaderSources = System.IO.File.ReadAllText(Consts.PATH1);
-			string pixelShaderSources = System.IO.File.ReadAllText(Consts.PATH2);
+
+			this.vertexBuffer = new VertexBuffer(VertexPositionColor.VertexInfo, vertices.Length, true);
+			this.vertexBuffer.SetData(vertices, vertices.Length);
+
+			this.indexBuffer = new IndexBuffer(indices.Length, true);
+			this.indexBuffer.SetData(indices, indices.Length);
+
+			this.vertexArray = new VertexArray(this.vertexBuffer);
+
+
+
+
+
+			string vertexShaderCode = System.IO.File.ReadAllText(Consts.PATH1);
+
+			string pixelShaderCode = System.IO.File.ReadAllText(Consts.PATH2);
 
 			int vertexShaderHandle = GL.CreateShader(ShaderType.VertexShader);
-			GL.ShaderSource(vertexShaderHandle, vertexShaderSources);
+			GL.ShaderSource(vertexShaderHandle, vertexShaderCode);
 			GL.CompileShader(vertexShaderHandle);
 
-			String vertexShaderInfo = GL.GetShaderInfoLog(vertexShaderHandle);
-			if(vertexShaderInfo != String.Empty) {
+			string vertexShaderInfo = GL.GetShaderInfoLog(vertexShaderHandle);
+			if (vertexShaderInfo != String.Empty) {
 				Console.WriteLine(vertexShaderInfo);
 			}
 
 			int pixelShaderHandle = GL.CreateShader(ShaderType.FragmentShader);
-			GL.ShaderSource(pixelShaderHandle, pixelShaderSources);
+			GL.ShaderSource(pixelShaderHandle, pixelShaderCode);
 			GL.CompileShader(pixelShaderHandle);
 
-			String pixelShaderInfo = GL.GetShaderInfoLog(pixelShaderHandle);
+			string pixelShaderInfo = GL.GetShaderInfoLog(pixelShaderHandle);
 			if (pixelShaderInfo != String.Empty) {
-				Console.WriteLine(pixelShaderInfo);
+				Console.WriteLine(vertexShaderInfo);
 			}
 
 			this.shaderProgramHandle = GL.CreateProgram();
@@ -127,25 +139,19 @@ namespace BSOpenTK {
 
 			int[] viewport = new int[4];
 			GL.GetInteger(GetPName.Viewport, viewport);
-			Vector2 viewportv = new((float)viewport[2], (float)viewport[3]);
 
 			GL.UseProgram(this.shaderProgramHandle);
-			int viewportSizeUnifornLocation = GL.GetUniformLocation(this.shaderProgramHandle, "ViewportSize");
-			GL.Uniform2(viewportSizeUnifornLocation, viewportv);
+			int viewportSizeUniformLocation = GL.GetUniformLocation(this.shaderProgramHandle, "ViewportSize");
+			GL.Uniform2(viewportSizeUniformLocation, (float)viewport[2], (float)viewport[3]);
 			GL.UseProgram(0);
 
 			base.OnLoad();
 		}
 
 		protected override void OnUnload() {
-			GL.BindVertexArray(0);
-			GL.DeleteVertexArray(this.vertexArryHandle);
-
-			GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-			GL.DeleteBuffer(this.indexBufferHandle);
-
-			GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-			GL.DeleteBuffer(this.vertexBufferHandle);
+			this.vertexArray?.Dispose();
+			this.indexBuffer?.Dispose();
+			this.vertexBuffer?.Dispose();
 
 			GL.UseProgram(0);
 			GL.DeleteProgram(this.shaderProgramHandle);
@@ -157,9 +163,9 @@ namespace BSOpenTK {
 			GL.Clear(ClearBufferMask.ColorBufferBit);
 
 			GL.UseProgram(this.shaderProgramHandle);
-			GL.BindVertexArray(this.vertexArryHandle);
-			GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBufferHandle);
-			GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt,0);
+			GL.BindVertexArray(this.vertexArray.VertexArrayHandle);
+			GL.BindBuffer(BufferTarget.ElementArrayBuffer, this.indexBuffer.IndexBufferHandle);
+			GL.DrawElements(PrimitiveType.Triangles, this.indexCount, DrawElementsType.UnsignedInt, 0);
 
 			this.Context.SwapBuffers();
 			base.OnRenderFrame(args);
